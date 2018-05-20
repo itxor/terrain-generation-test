@@ -1,3 +1,4 @@
+#pragma once
 #include "Shader.h"
 #include "consts.h"
 
