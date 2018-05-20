@@ -96,24 +96,28 @@ int main()
 
 	map<unsigned int, const GLchar *> shaderNames = {
 		{ 1, "shaders/shader.vs" },
-		//{ 2, "shaders/shader.tcs" },
-		//{ 3, "shaders/shader.tes" },
+		{ 2, "shaders/shader.tcs" },
+		{ 3, "shaders/shader.tes" },
 		//{ 4, "shaders/shader.gmt" },
 		{ 5, "shaders/shader.frag" }
 	};
 	Shader mainShader(shaderNames);
 
-	//создание буфферов
-	GLuint VBO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
 	GLuint VAO;
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
+
+	GLuint positions;
+	glGenBuffers(1, &positions);
+	glBindBuffer(GL_ARRAY_BUFFER, positions);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), (void*)0);
 	glEnableVertexAttribArray(0);
+	
+	GLuint indices;
+	glGenBuffers(1, &indices);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Faces), Faces, GL_STATIC_DRAW);
 	glBindVertexArray(0);
 
 
@@ -124,6 +128,14 @@ int main()
 		mainShader.Use();
 
 		//загрузка uniform-переменных
+		mainShader.setFloat("TessLevelOuter", 3);
+		mainShader.setFloat("TessLevelInner", 5);
+
+		mainShader.setVec3("LightPosition", glm::vec3(1.2f, 1.0f, 2.0f));
+		mainShader.setVec3("DiffuseMaterial", glm::vec3(0.61424f, 0.04136f, 0.04136f));
+		mainShader.setVec3("AmbientMaterial", glm::vec3(0.1745f, 0.01175f, 0.01175f));
+
+		//mainShader.setVec3("NormalMatrix", glm::vec3(0.0f, 0.0f, 1.0f));
 
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
@@ -133,7 +145,7 @@ int main()
 		glBindVertexArray(VAO);
 		glm::mat4 model(1.0f);
 		mainShader.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_PATCHES, 0, 3);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		glBindVertexArray(0);

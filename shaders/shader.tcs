@@ -1,0 +1,22 @@
+#version 440 core
+layout (vertices = 3) out;
+
+in vec3 vPosition[];
+
+uniform float TessLevelOuter;
+uniform float TessLevelInner;
+
+out vec3 tcPosition[];
+
+void main() {
+	//копируем позицию текущей вершины патча из входных в выходные
+	tcPosition[gl_InvocationID] = vPosition[gl_InvocationID];
+
+	if (gl_InvocationID == 0)
+	{
+		gl_TessLevelInner[0] = TessLevelInner;
+		gl_TessLevelOuter[0] = TessLevelOuter;
+		gl_TessLevelOuter[1] = TessLevelOuter;
+		gl_TessLevelOuter[2] = TessLevelOuter;
+	}
+}
