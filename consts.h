@@ -11,3 +11,9 @@ GLfloat lastX = WIDTH / 2.0f,
 		deltaTime = 0.0f,
 		lastFrame = 0.0f,
 		currentFrame = 0;
+
+GLfloat vertices[] = {
+	-0.5f, -0.5f, 0.0f,
+	0.5f, -0.5f, 0.0f,
+	0.0f, 0.5f, 0.0f
+};

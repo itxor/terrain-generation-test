@@ -43,7 +43,7 @@ GLFWwindow * createWindow(int width, int height, string title)
 
 void initialGLEW()
 {
-	glewExperimental - GL_TRUE;
+	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 	{
 		std::cout << "Ошибка инициализации GLEW" << std::endl;
@@ -75,7 +75,7 @@ void do_movement()
 
 void displayClear()
 {
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -96,14 +96,26 @@ int main()
 
 	map<unsigned int, const GLchar *> shaderNames = {
 		{ 1, "shaders/shader.vs" },
-		{ 2, "shaders/shader.tcs" },
-		{ 3, "shaders/shader.tes" },
-		{ 4, "shaders/shader.gmt" },
+		//{ 2, "shaders/shader.tcs" },
+		//{ 3, "shaders/shader.tes" },
+		//{ 4, "shaders/shader.gmt" },
 		{ 5, "shaders/shader.frag" }
 	};
 	Shader mainShader(shaderNames);
 
 	//создание буфферов
+	GLuint VBO;
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	GLuint VAO;
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), (void*)0);
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
+
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -118,9 +130,13 @@ int main()
 		mainShader.setMat4("projection", projection);
 		mainShader.setMat4("view", view);
 
-		//bindVAO
-		//создание матриц модели и загрузка их в шейдер
-		//unbindVAO, свапаем буфферы и glfwPollEvents();
+		glBindVertexArray(VAO);
+		glm::mat4 model(1.0f);
+		mainShader.setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+		glBindVertexArray(0);
 	}
 	return 0;
 }
