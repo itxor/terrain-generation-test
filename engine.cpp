@@ -10,8 +10,8 @@
 
 #include "Shader.h"
 #include "Camera.h"
-#include "CallBacks.h"
 #include "consts.h"
+#include "CallBacks.h"
 
 using namespace std;
 
@@ -95,11 +95,11 @@ int main()
 	enableCallBackFunctions(window);
 
 	map<unsigned int, const GLchar *> shaderNames = {
-		{ VERTEX_SHADER, "shaders/shader.vs" },
-		{ TCS_SHADER, "shaders/shader.tcs" },
-		{ TES_SHADER, "shaders/shader.tes" },
-		{ GEOMETRY_SHADER, "shaders/shader.gmt" },
-		{ FRAGMENT_SHADER, "shaders/shader.frag" }
+		{ 1, "shaders/shader.vs" },
+		{ 2, "shaders/shader.tcs" },
+		{ 3, "shaders/shader.tes" },
+		{ 4, "shaders/shader.gmt" },
+		{ 5, "shaders/shader.frag" }
 	};
 	Shader mainShader(shaderNames);
 

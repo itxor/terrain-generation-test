@@ -1,6 +1,4 @@
-#pragma once
 #include "Shader.h"
-#include "consts.h"
 
 Shader::Shader(map<unsigned int, const GLchar*> shaderNames)
 {
@@ -36,27 +34,27 @@ Shader::Shader(map<unsigned int, const GLchar*> shaderNames)
 		
 		switch (elem.first)
 		{
-			case (VERTEX_SHADER):
+			case 1:
 			{
 				shader = glCreateShader(GL_VERTEX_SHADER);
 				break;
 			}
-			case (TCS_SHADER):
+			case 2:
 			{
 				shader = glCreateShader(GL_TESS_CONTROL_SHADER);
 				break;
 			}
-			case (TES_SHADER):
+			case 3:
 			{
 				shader = glCreateShader(GL_TESS_EVALUATION_SHADER);
 				break;
 			}
-			case (GEOMETRY_SHADER):
+			case 4:
 			{
 				shader = glCreateShader(GL_GEOMETRY_SHADER);
 				break;
 			}
-			case (FRAGMENT_SHADER):
+			case 5:
 			{
 				shader = glCreateShader(GL_FRAGMENT_SHADER);
 				break;

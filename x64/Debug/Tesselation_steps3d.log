@@ -1,0 +1,5 @@
+﻿  engine.cpp
+c:\users\itxor\source\repos\c++\opengl-projects\diplom\примеры по шедеру тесселяции\tesselation_steps3d\tesselation_steps3d\engine.cpp(3): fatal error C1083: Не удается открыть файл включение: GL/glew.h: No such file or directory,
+  Shader.cpp
+c:\users\itxor\source\repos\c++\opengl-projects\diplom\примеры по шедеру тесселяции\tesselation_steps3d\tesselation_steps3d\shader.h(5): fatal error C1083: Не удается открыть файл включение: GL/glew.h: No such file or directory,
+  Создание кода...
