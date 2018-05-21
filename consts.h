@@ -35,7 +35,6 @@ const int Faces[] = {
 	1, 6, 10 
 };
 
-
 GLfloat vertices[] = {
 	0.000f,  0.000f,  1.000f,
 	0.894f,  0.000f,  0.447f,

@@ -98,7 +98,7 @@ int main()
 		{ 1, "shaders/shader.vs" },
 		{ 2, "shaders/shader.tcs" },
 		{ 3, "shaders/shader.tes" },
-		//{ 4, "shaders/shader.gmt" },
+		{ 4, "shaders/shader.gmt" },
 		{ 5, "shaders/shader.frag" }
 	};
 	Shader mainShader(shaderNames);
@@ -120,7 +120,6 @@ int main()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Faces), Faces, GL_STATIC_DRAW);
 	glBindVertexArray(0);
 
-
 	while (!glfwWindowShouldClose(window))
 	{
 		do_movement();
@@ -131,11 +130,11 @@ int main()
 		mainShader.setFloat("TessLevelOuter", 3);
 		mainShader.setFloat("TessLevelInner", 5);
 
+		mainShader.setMat3("NormalMatrix", glm::mat3(1.0f));
+
 		mainShader.setVec3("LightPosition", glm::vec3(1.2f, 1.0f, 2.0f));
 		mainShader.setVec3("DiffuseMaterial", glm::vec3(0.61424f, 0.04136f, 0.04136f));
 		mainShader.setVec3("AmbientMaterial", glm::vec3(0.1745f, 0.01175f, 0.01175f));
-
-		//mainShader.setVec3("NormalMatrix", glm::vec3(0.0f, 0.0f, 1.0f));
 
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();

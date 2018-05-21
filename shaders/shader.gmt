@@ -1,9 +1,15 @@
+#version 440 core
+//матрица нормалей
 uniform mat3 NormalMatrix;
 
+//на вход - треугольника
 layout(triangles) in;
+//на выход - многоугольники из треугольников
 layout(triangle_strip, max_vertices = 3) out;
 
-in vec3 tePosition[3];
+//на вход - массив из 3-х векторов из шейдера оценки тесселяции
+in vec3 tePosition[3]; 
+//на вход - массив из 3-х векторов, описывающих текущие координаты
 in vec3 tePatchDistance[3];
 
 out vec3 gFacetNormal;
