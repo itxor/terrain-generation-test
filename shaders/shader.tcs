@@ -3,10 +3,28 @@ layout (vertices = 3) out;
 
 in vec3 vPosition[];
 
-uniform float TessLevelOuter;
-uniform float TessLevelInner;
+//uniform float TessLevelOuter;
+//uniform float TessLevelInner;
+uniform vec3 eyePosition;
 
 out vec3 tcPosition[];
+
+int lod() {
+	float dist = distance(vPosition[gl_InvocationID], eyePosition);
+	if(dist < 5.0f) {
+        return 48;
+    }
+    if(dist < 7.0f) {
+        return 24;
+    }
+    if(dist < 10.0f) {
+        return 12;
+    }
+    if(dist < 15.0f) {
+        return 6;
+    }
+    return 4;
+}
 
 void main() {
 	//копируем позицию текущей вершины патча из входных в выходные
@@ -14,9 +32,9 @@ void main() {
 
 	if (gl_InvocationID == 0)
 	{
-		gl_TessLevelInner[0] = TessLevelInner;
-		gl_TessLevelOuter[0] = TessLevelOuter;
-		gl_TessLevelOuter[1] = TessLevelOuter;
-		gl_TessLevelOuter[2] = TessLevelOuter;
+		gl_TessLevelInner[0] = lod();
+		gl_TessLevelOuter[0] = lod();
+		gl_TessLevelOuter[1] = lod();
+		gl_TessLevelOuter[2] = lod();
 	}
 }

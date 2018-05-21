@@ -127,9 +127,10 @@ int main()
 		mainShader.Use();
 
 		//загрузка uniform-переменных
-		mainShader.setFloat("TessLevelOuter", 3);
-		mainShader.setFloat("TessLevelInner", 5);
+		/*mainShader.setFloat("TessLevelOuter", 1);
+		mainShader.setFloat("TessLevelInner", 2);*/
 
+		mainShader.setVec3("eyePosition", camera.Position);
 		mainShader.setMat3("NormalMatrix", glm::mat3(1.0f));
 
 		mainShader.setVec3("LightPosition", glm::vec3(1.2f, 1.0f, 2.0f));
