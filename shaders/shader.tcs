@@ -3,8 +3,6 @@ layout (vertices = 3) out;
 
 in vec3 vPosition[];
 
-//uniform float TessLevelOuter;
-//uniform float TessLevelInner;
 uniform vec3 eyePosition;
 
 out vec3 tcPosition[];
