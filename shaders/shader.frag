@@ -2,7 +2,7 @@
 
 out vec4 color;
 
-//layout (binding = 1) uniform sampler2D tex_color;
+layout (binding = 1) uniform sampler2D tex_color;
 
 in TES_OUT
 {
@@ -11,6 +11,6 @@ in TES_OUT
 
 void main(void)
 {
-    //color = texture(tex_color, fs_in.tc);
-    color = vec4(1.0f);
+    color = texture(tex_color, fs_in.tc);
+    //color = vec4(1.0f);
 }
