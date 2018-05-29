@@ -1,4 +1,4 @@
-#define GLEW_STATIC
+ï»¿#define GLEW_STATIC
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -6,10 +6,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "Shader.h"
+#include "_shader.h"
 #include "Camera.h"
 #include "consts.h"
 #include "CallBacks.h"
+#include <SOIL.h>
 
 using namespace std;
 
@@ -19,28 +20,24 @@ GLFWwindow * createWindow(int width, int height, string title);
 void initialGLEW();
 void do_movement();
 void displayClear();
-void bufferingInitialization(GLuint &VAO, GLuint &positions, GLuint &indices);
+void bufferingInitialization(GLuint &VAO);
 void uniformValuesUpload(Shader mainShader);
+void loadTexture(GLuint & texture, const char * texturePath, unsigned int textureNumber);
+void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainShader);
 
 int main()
 {
-	/*variables section*/
-	map<unsigned int, const GLchar *> shaderNames = {
+	map<unsigned int, const GLchar *> shaderTerrainNames = {
 		{ 1, "shaders/shader.vs" },
 		{ 2, "shaders/shader.tcs" },
 		{ 3, "shaders/shader.tes" },
-		{ 4, "shaders/shader.gmt" },
 		{ 5, "shaders/shader.frag" }
 	};
-	GLuint VAO,
-		positions,
-		indices;
 	GLFWwindow * window;
-	/*variables sections*/
+	GLuint VAO;
 
-	/*initial's section*/
 	initialGLFWEnviroment();
-	window = createWindow(WIDTH, HEIGHT, "hello, triangulation");
+	window = createWindow(WIDTH, HEIGHT, "Generation of landscape elements");
 	if (window == nullptr)
 	{
 		return 1;
@@ -48,12 +45,16 @@ int main()
 	else
 	{
 		initialGLEW();
+		enableCallBackFunctions(window);
+		bufferingInitialization(VAO);
 	}
-	enableCallBackFunctions(window);
-	bufferingInitialization(VAO, positions, indices);
-	/*initial's section*/
-	
-	Shader mainShader(shaderNames);
+
+	GLuint displacement_map,
+		terrain_texture;
+	loadTexture(displacement_map, "textures\\displaycement_mapping_noize.png", 0);
+	loadTexture(terrain_texture, "textures\\terrain_texture.jpg", 0);
+
+	Shader mainShader(shaderTerrainNames);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -62,19 +63,14 @@ int main()
 		mainShader.Use();
 
 		uniformValuesUpload(mainShader);
+		bindTextures(displacement_map, terrain_texture, mainShader);
 
-		mainShader.setMat4(
-			"projection", 
-			glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f)
-		);
-		mainShader.setMat4("view", camera.GetViewMatrix());
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glPatchParameteri(GL_PATCH_VERTICES, 4);
+		glDrawArraysInstanced(GL_PATCHES, 0, 4, 64 * 64);
 
-		glBindVertexArray(VAO);
-		mainShader.setMat4("model", glm::mat4(1.0f));
-		glDrawArrays(GL_PATCHES, 0, 3);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-		glBindVertexArray(0);
 	}
 	return 0;
 }
@@ -93,7 +89,7 @@ GLFWwindow * createWindow(int width, int height, string title)
 	GLFWwindow * window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 	if (window == nullptr)
 	{
-		std::cout << "Îøèáêà ïðè ñîçäàíèè îêíà GLFW" << std::endl;
+		std::cout << "ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ GLFW" << std::endl;
 		glfwTerminate();
 		return nullptr;
 	}
@@ -110,7 +106,7 @@ void initialGLEW()
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 	{
-		std::cout << "Îøèáêà èíèöèàëèçàöèè GLEW" << std::endl;
+		std::cout << "ÐÐµ ÑƒÐ´Ð°Ð»Ð¾ÑÑŒ Ð¸Ð½Ð¸Ñ†Ð¸Ð°Ð»Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ GLEW" << std::endl;
 		return;
 	}
 	else
@@ -143,38 +139,49 @@ void displayClear()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void bufferingInitialization(GLuint &VAO, GLuint &positions, GLuint &indices)
+void bufferingInitialization(GLuint &VAO)
 {
 	if (VAO != -1)
 	{
 		glGenVertexArrays(1, &VAO);
 		glBindVertexArray(VAO);
 	}
-	if (positions != -1)
-	{
-		glGenBuffers(1, &positions);
-		glBindBuffer(GL_ARRAY_BUFFER, positions);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), (void*)0);
-		glEnableVertexAttribArray(0);
-	}
-	if (indices != -1)
-	{
-		glGenBuffers(1, &indices);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Faces), Faces, GL_STATIC_DRAW);
-		glBindVertexArray(0);
-	}
 	return;
 }
 
 void uniformValuesUpload(Shader mainShader)
 {
-	//çàãðóçêà uniform-ïåðåìåííûõ
-	mainShader.setVec3("eyePosition", camera.Position);
-	mainShader.setMat3("NormalMatrix", glm::mat3(1.0f));
+	mainShader.setFloat("dmap_depth", 6.0f);
+	mainShader.setMat4("projection", glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f));
+	mainShader.setMat4("view", camera.GetViewMatrix());
+	mainShader.setMat4("model", glm::mat4(1.0f));
+}
 
-	mainShader.setVec3("LightPosition", glm::vec3(1.2f, 1.0f, 2.0f));
-	mainShader.setVec3("DiffuseMaterial", glm::vec3(0.61424f, 0.04136f, 0.04136f));
-	mainShader.setVec3("AmbientMaterial", glm::vec3(0.1745f, 0.01175f, 0.01175f));
+void loadTexture(GLuint & texture, const char * texturePath, unsigned int textureNumber)
+{
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int width, height;
+	unsigned char* image = SOIL_load_image(texturePath, &width, &height, 0, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SOIL_free_image_data(image);
+	glBindTexture(GL_TEXTURE_2D, textureNumber);
+}
+
+void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainShader)
+{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, displacement_map);
+	glUniform1i(glGetUniformLocation(mainShader.Program, "tex_displacement"), 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, terrain_texture);
+	glUniform1i(glGetUniformLocation(mainShader.Program, "tex_color"), 1);
 }

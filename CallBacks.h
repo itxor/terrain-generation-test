@@ -43,7 +43,6 @@ void scroll_callback(GLFWwindow * window, double xoffset, double yoffset)
 	camera.ProcessMouseScroll(yoffset);
 }
 
-
 void enableCallBackFunctions(GLFWwindow * window)
 {
 	//устанавливаем callback-функции (регистрация идёт ПОСЛЕ создания окна и ДО запуска игрового цикла):

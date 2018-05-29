@@ -1,4 +1,4 @@
-#include "Shader.h"
+#include "_shader.h"
 
 Shader::Shader(map<unsigned int, const GLchar*> shaderNames)
 {
@@ -83,7 +83,6 @@ Shader::Shader(map<unsigned int, const GLchar*> shaderNames)
 		cout << "ќшибка компил€ции шейдерной программы: \n" << infoLog << endl;
 	}
 }
-
 
 void Shader::Use()
 {
