@@ -84,7 +84,6 @@ Shader::Shader(map<unsigned int, const GLchar*> shaderNames)
 	}
 }
 
-
 void Shader::Use()
 {
 	glUseProgram(this->Program);

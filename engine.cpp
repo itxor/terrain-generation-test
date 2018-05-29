@@ -26,12 +26,19 @@ void uniformValuesUpload(Shader mainShader);
 int main()
 {
 	/*variables section*/
-	map<unsigned int, const GLchar *> shaderNames = {
+	map<unsigned int, const GLchar *> shaderTerrainNames = {
 		{ 1, "shaders/shader.vs" },
 		{ 2, "shaders/shader.tcs" },
 		{ 3, "shaders/shader.tes" },
-		//{ 4, "shaders/shader.gmt" },
 		{ 5, "shaders/shader.frag" }
+	};
+
+	map<unsigned int, const GLchar *> shaderVegetationNames = {
+		{ 1, "shaders/shader_veg.vs" },
+		{ 2, "shaders/shader_veg.tcs" },
+		{ 3, "shaders/shader_veg.tes" },
+		{ 4, "shaders/shader_veg.gmt" },
+		{ 5, "shaders/shader_veg.frag" }
 	};
 
 	GLFWwindow * window;
@@ -61,7 +68,7 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	int width, height;
-	unsigned char* image = SOIL_load_image("noize.jpg", &width, &height, 0, SOIL_LOAD_RGB);
+	unsigned char* image = SOIL_load_image("noize.png", &width, &height, 0, SOIL_LOAD_RGB);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	SOIL_free_image_data(image);
@@ -83,8 +90,8 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, 0);
 	/*initial's section*/
 
-	Shader mainShader(shaderNames);
-	glPatchParameteri(GL_PATCH_VERTICES, 4);
+	Shader mainShader(shaderTerrainNames);
+	Shader mainShade_r(shaderVegetationNames);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -94,7 +101,8 @@ int main()
 
 		mainShader.setMat4("projection", glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f));
 		mainShader.setMat4("view", camera.GetViewMatrix());
-		
+		mainShader.setMat4("model", glm::mat4(1.0f));
+
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
 		glUniform1i(glGetUniformLocation(mainShader.Program, "tex_displacement"), 0);
@@ -105,9 +113,9 @@ int main()
 
 		uniformValuesUpload(mainShader);
 
-		glDepthFunc(GL_LEQUAL);
+		glPatchParameteri(GL_PATCH_VERTICES, 4);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		mainShader.setMat4("model", glm::mat4(1.0f));
+		
 		glDrawArraysInstanced(GL_PATCHES, 0, 4, 64 * 64);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -129,7 +137,7 @@ GLFWwindow * createWindow(int width, int height, string title)
 	GLFWwindow * window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 	if (window == nullptr)
 	{
-		std::cout << "Îøèáêà ïðè ñîçäàíèè îêíà GLFW" << std::endl;
+		std::cout << "Не удалось инициализировать GLFW" << std::endl;
 		glfwTerminate();
 		return nullptr;
 	}
