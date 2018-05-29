@@ -22,65 +22,37 @@ void do_movement();
 void displayClear();
 void bufferingInitialization(GLuint &VAO);
 void uniformValuesUpload(Shader mainShader);
+void loadTexture(GLuint & texture, const char * texturePath, unsigned int textureNumber);
+void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainShader);
 
 int main()
 {
-	/*variables section*/
 	map<unsigned int, const GLchar *> shaderTerrainNames = {
 		{ 1, "shaders/shader.vs" },
 		{ 2, "shaders/shader.tcs" },
 		{ 3, "shaders/shader.tes" },
 		{ 5, "shaders/shader.frag" }
 	};
-
 	GLFWwindow * window;
 	GLuint VAO;
-	/*variables sections*/
 
-	/*initial's section*/
 	initialGLFWEnviroment();
-	window = createWindow(WIDTH, HEIGHT, "hello, triangulation");
+	window = createWindow(WIDTH, HEIGHT, "Generation of landscape elements");
 	if (window == nullptr)
+	{
 		return 1;
+	}
 	else
+	{
 		initialGLEW();
-	enableCallBackFunctions(window);
-	bufferingInitialization(VAO);
+		enableCallBackFunctions(window);
+		bufferingInitialization(VAO);
+	}
 
-	// Load and create a texture 
-	GLuint texture1,
-		texture2;
-	// Texture 1
-	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D, texture1);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	int width, height;
-	unsigned char* image = SOIL_load_image("textures\\displaycement_mapping_noize.png", &width, &height, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	SOIL_free_image_data(image);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	// Texture 2
-	glGenTextures(1, &texture2);
-	glBindTexture(GL_TEXTURE_2D, texture2);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	image = SOIL_load_image("textures\\terragen_texture.jpg", &width, &height, 0, SOIL_LOAD_RGB);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	SOIL_free_image_data(image);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	/*initial's section*/
+	GLuint displacement_map,
+		terrain_texture;
+	loadTexture(displacement_map, "textures\\displaycement_mapping_noize.png", 0);
+	loadTexture(terrain_texture, "textures\\terrain_texture.jpg", 0);
 
 	Shader mainShader(shaderTerrainNames);
 
@@ -90,24 +62,13 @@ int main()
 		displayClear();
 		mainShader.Use();
 
-		mainShader.setMat4("projection", glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f));
-		mainShader.setMat4("view", camera.GetViewMatrix());
-		mainShader.setMat4("model", glm::mat4(1.0f));
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture1);
-		glUniform1i(glGetUniformLocation(mainShader.Program, "tex_displacement"), 0);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture2);
-		glUniform1i(glGetUniformLocation(mainShader.Program, "tex_color"), 1);
-
 		uniformValuesUpload(mainShader);
+		bindTextures(displacement_map, terrain_texture, mainShader);
 
-		glPatchParameteri(GL_PATCH_VERTICES, 4);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		
+		glPatchParameteri(GL_PATCH_VERTICES, 4);
 		glDrawArraysInstanced(GL_PATCHES, 0, 4, 64 * 64);
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -191,4 +152,36 @@ void bufferingInitialization(GLuint &VAO)
 void uniformValuesUpload(Shader mainShader)
 {
 	mainShader.setFloat("dmap_depth", 6.0f);
+	mainShader.setMat4("projection", glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f));
+	mainShader.setMat4("view", camera.GetViewMatrix());
+	mainShader.setMat4("model", glm::mat4(1.0f));
+}
+
+void loadTexture(GLuint & texture, const char * texturePath, unsigned int textureNumber)
+{
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int width, height;
+	unsigned char* image = SOIL_load_image(texturePath, &width, &height, 0, SOIL_LOAD_RGB);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SOIL_free_image_data(image);
+	glBindTexture(GL_TEXTURE_2D, textureNumber);
+}
+
+void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainShader)
+{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, displacement_map);
+	glUniform1i(glGetUniformLocation(mainShader.Program, "tex_displacement"), 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, terrain_texture);
+	glUniform1i(glGetUniformLocation(mainShader.Program, "tex_color"), 1);
 }
