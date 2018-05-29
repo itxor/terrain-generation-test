@@ -33,14 +33,6 @@ int main()
 		{ 5, "shaders/shader.frag" }
 	};
 
-	map<unsigned int, const GLchar *> shaderVegetationNames = {
-		{ 1, "shaders/shader_veg.vs" },
-		{ 2, "shaders/shader_veg.tcs" },
-		{ 3, "shaders/shader_veg.tes" },
-		{ 4, "shaders/shader_veg.gmt" },
-		{ 5, "shaders/shader_veg.frag" }
-	};
-
 	GLFWwindow * window;
 	GLuint VAO;
 	/*variables sections*/
@@ -91,7 +83,6 @@ int main()
 	/*initial's section*/
 
 	Shader mainShader(shaderTerrainNames);
-	Shader mainShade_r(shaderVegetationNames);
 
 	while (!glfwWindowShouldClose(window))
 	{
