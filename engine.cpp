@@ -11,6 +11,14 @@
 #include "CallBacks.h"
 #include <SOIL.h>
 
+enum shaderTypes {
+	vertex_shader = 1,
+	tcs_shader,
+	tes_shader,
+	geometry_shader,
+	fragment_shader,
+};
+
 /*function prototipes*/
 void initialGLFWEnviroment();
 GLFWwindow * createWindow(int width, int height, string title);
@@ -18,17 +26,25 @@ void initialGLEW();
 void do_movement();
 void displayClear();
 void bufferingInitialization(GLuint &VAO);
-void uniformValuesUpload(Shader mainShader);
+void terrainShader_uniformValuesUpload(Shader terrainShader);
+void grassShader_uniformValuesUpload(Shader grassShader);
 void loadTexture(GLuint & texture, const char * texturePath);
 void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainShader);
 
 int main()
 {
 	map<unsigned int, const GLchar *> shaderTerrainNames = {
-		{ 1, "shaders/shader.vs" },
-		{ 2, "shaders/shader.tcs" },
-		{ 3, "shaders/shader.tes" },
-		{ 5, "shaders/shader.frag" }
+		{ vertex_shader, "shaders/terrain_shaders/shader.vs" },
+		{ tcs_shader, "shaders/terrain_shaders/shader.tcs" },
+		{ tes_shader, "shaders/terrain_shaders/shader.tes" },
+		{ fragment_shader, "shaders/terrain_shaders/shader.frag" }
+	};
+	map<unsigned int, const GLchar *> shaderGrassNames = {
+		{ vertex_shader, "shaders/vegetation/grass.vs" },
+		{ tcs_shader, "shaders/vegetation/grass.tcs" },
+		{ tes_shader, "shaders/vegetation/grass.tes" },
+		{ geometry_shader, "shaders/vegetation/grass.gmt" },
+		{ fragment_shader, "shaders/vegetation/grass.frag" }
 	};
 	GLFWwindow * window;
 	GLuint VAO;
@@ -51,21 +67,27 @@ int main()
 	loadTexture(displacement_map, "textures\\displaycement_mapping_noize.png");
 	loadTexture(terrain_texture, "textures\\terrain_texture.jpg");
 
-	Shader mainShader(shaderTerrainNames);
+	Shader terrainShader(shaderTerrainNames);
+	Shader grassShader(shaderGrassNames);
 
 	while (!glfwWindowShouldClose(window))
 	{
 		do_movement();
 		displayClear();
-		mainShader.Use();
+		terrainShader.Use();
 
-		uniformValuesUpload(mainShader);
-		bindTextures(displacement_map, terrain_texture, mainShader);
+		//uniform variables upload
+		terrainShader_uniformValuesUpload(terrainShader);
+		grassShader_uniformValuesUpload(grassShader);
 
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		bindTextures(displacement_map, terrain_texture, terrainShader);
+
+		//terrain rendering
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glPatchParameteri(GL_PATCH_VERTICES, 4);
 		glDrawArraysInstanced(GL_PATCHES, 0, 4, 64 * 64);
 
+		//grass rendering
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -146,12 +168,24 @@ void bufferingInitialization(GLuint &VAO)
 	return;
 }
 
-void uniformValuesUpload(Shader mainShader)
+void mvpUniformUpload(Shader shader)
 {
-	mainShader.setFloat("dmap_depth", 6.0f);
-	mainShader.setMat4("projection", glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f));
-	mainShader.setMat4("view", camera.GetViewMatrix());
-	mainShader.setMat4("model", glm::mat4(1.0f));
+	shader.setMat4("projection", glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f));
+	shader.setMat4("view", camera.GetViewMatrix());
+	shader.setMat4("model", glm::mat4(1.0f));
+}
+
+void terrainShader_uniformValuesUpload(Shader terrainShader)
+{
+	mvpUniformUpload(terrainShader);
+	//other uniform variables
+	terrainShader.setFloat("dmap_depth", 6.0f);
+}
+
+void grassShader_uniformValuesUpload(Shader grassShader)
+{
+	mvpUniformUpload(grassShader);
+	//other uniform variables
 }
 
 void loadTexture(GLuint & texture, const char * texturePath)

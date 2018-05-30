@@ -1,0 +1,211 @@
+#version 440 core
+
+#define numSectors 24
+#define M_PI 3.1415926535897932384626433832795f
+
+const int totalFrames = 65536;
+uniform int frameNumber;
+uniform int numPrimitives;
+float sfn = float(frameNumber) / totalFrames; // Specific frame number.
+uniform sampler1D urandom01;
+
+layout(isolines, equal_spacing) in;
+
+out vec3 normal;
+out vec3 binormal;
+out float stemThickness;
+out float along;
+flat out float stemIdx;
+
+float rand(const in float seed) 
+{
+
+    return texture(urandom01, seed).r;
+}
+
+/*PERLIN NOIZE*/
+vec4 mod289_2d(vec4 x)
+{
+
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec4 permute2d(vec4 x)
+{
+
+  return mod289_2d(((x*34.0)+1.0)*x);
+}
+
+vec4 taylorInvSqrt2d(vec4 r)
+{
+
+  return 1.79284291400159 - 0.85373472095314 * r;
+}
+
+vec2 fade2d(vec2 t) 
+{
+
+  return t*t*t*(t*(t*6.0-15.0)+10.0);
+}
+
+float cnoise2d(vec2 P)
+{
+  vec4 Pi = floor(P.xyxy) + vec4(0.0, 0.0, 1.0, 1.0);
+  vec4 Pf = fract(P.xyxy) - vec4(0.0, 0.0, 1.0, 1.0);
+  Pi = mod289_2d(Pi); // To avoid truncation effects in permutation
+  vec4 ix = Pi.xzxz;
+  vec4 iy = Pi.yyww;
+  vec4 fx = Pf.xzxz;
+  vec4 fy = Pf.yyww;
+
+  vec4 i = permute2d(permute2d(ix) + iy);
+
+  vec4 gx = fract(i * (1.0 / 41.0)) * 2.0 - 1.0 ;
+  vec4 gy = abs(gx) - 0.5 ;
+  vec4 tx = floor(gx + 0.5);
+  gx = gx - tx;
+
+  vec2 g00 = vec2(gx.x,gy.x);
+  vec2 g10 = vec2(gx.y,gy.y);
+  vec2 g01 = vec2(gx.z,gy.z);
+  vec2 g11 = vec2(gx.w,gy.w);
+
+  vec4 norm = taylorInvSqrt2d(vec4(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11)));
+  g00 *= norm.x;  
+  g01 *= norm.y;  
+  g10 *= norm.z;  
+  g11 *= norm.w;  
+
+  float n00 = dot(g00, vec2(fx.x, fy.x));
+  float n10 = dot(g10, vec2(fx.y, fy.y));
+  float n01 = dot(g01, vec2(fx.z, fy.z));
+  float n11 = dot(g11, vec2(fx.w, fy.w));
+
+  vec2 fade2d_xy = fade2d(Pf.xy);
+  vec2 n_x = mix(vec2(n00, n01), vec2(n10, n11), fade2d_xy.x);
+  float n_xy = mix(n_x.x, n_x.y, fade2d_xy.y);
+  return 2.3 * n_xy;
+}
+
+float pnoise2d(vec2 P, vec2 rep)
+{
+  vec4 Pi = floor(P.xyxy) + vec4(0.0, 0.0, 1.0, 1.0);
+  vec4 Pf = fract(P.xyxy) - vec4(0.0, 0.0, 1.0, 1.0);
+  Pi = mod(Pi, rep.xyxy); // To create noise with explicit period
+  Pi = mod289_2d(Pi);        // To avoid truncation effects in permutation
+  vec4 ix = Pi.xzxz;
+  vec4 iy = Pi.yyww;
+  vec4 fx = Pf.xzxz;
+  vec4 fy = Pf.yyww;
+
+  vec4 i = permute2d(permute2d(ix) + iy);
+
+  vec4 gx = fract(i * (1.0 / 41.0)) * 2.0 - 1.0 ;
+  vec4 gy = abs(gx) - 0.5 ;
+  vec4 tx = floor(gx + 0.5);
+  gx = gx - tx;
+
+  vec2 g00 = vec2(gx.x,gy.x);
+  vec2 g10 = vec2(gx.y,gy.y);
+  vec2 g01 = vec2(gx.z,gy.z);
+  vec2 g11 = vec2(gx.w,gy.w);
+
+  vec4 norm = taylorInvSqrt2d(vec4(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11)));
+  g00 *= norm.x;  
+  g01 *= norm.y;  
+  g10 *= norm.z;  
+  g11 *= norm.w;  
+
+  float n00 = dot(g00, vec2(fx.x, fy.x));
+  float n10 = dot(g10, vec2(fx.y, fy.y));
+  float n01 = dot(g01, vec2(fx.z, fy.z));
+  float n11 = dot(g11, vec2(fx.w, fy.w));
+
+  vec2 fade2d_xy = fade2d(Pf.xy);
+  vec2 n_x = mix(vec2(n00, n01), vec2(n10, n11), fade2d_xy.x);
+  float n_xy = mix(n_x.x, n_x.y, fade2d_xy.y);
+  return 2.3 * n_xy;
+}
+/*PERLIN NOIZE*/
+
+// Классический 2D-шум Перлина на интервале [a, b]
+float cnoise2dab(const in vec2 x, const in float a, const in float b) 
+{
+
+    return fma((cnoise2d(x) + 1.0f) * 0.5f, b-a, a);
+}
+
+// Толщина стебля в точке x.
+float thickness(const in float x) 
+{
+    return (1.0f - x) / 2.5f;
+}
+
+// Функция гибкости
+float flexibility(const in float x) 
+{
+    return x * x;
+}
+
+mat3 rotate(float alpha)
+{
+    return mat3(cos(alpha), 0.0f, -sin(alpha),
+                0.0f,     1.0f,      0.0f,
+                sin(alpha), 0.0f, cos(alpha)
+                );
+}
+
+vec2 returnPerlinNoize(float randY, float pIdxSfn, float a1, float b1, float a2, float b2) 
+{
+    return vec2(
+        cnoise2dab(vec2((randY), pIdxSfn), a1, b1),
+        cnoise2dab(vec2((randY), pIdxSfn), a2, b2)
+    );
+}
+
+vec3 rotateNormal(mat3 circDistribution, vec2 p1, vec2 p2, vec2 p3, vec2 p0, float t, float t1)
+{
+    return normalize(circDistribution * vec3(
+        p0.y * (t1 * t1) * -3.0f + p1.y * (t1 * t1) * 3.0f - p2.y * (t * t) * 3.0f +
+            p3.y * (t * t) * 3.0f - p2.y * t * t1 * 6.0f + p1.y * t * t1 * 6.0f,
+        p0.x * (t1 * t1) *  3.0f - p1.x * (t1 * t1) * 3.0f + p2.x * (t * t) * 3.0f -
+            p3.x * (t * t) * 3.0f + p2.x * t * t1 * 6.0f - p1.x * t * t1 * 6.0f,
+        0.0f
+    ));
+}
+
+void main(void)
+{
+    stemThickness = thickness(gl_TessCoord.x);                      //толщина текущего стебля
+    along = gl_TessCoord.x;                                         //текущая CP
+    stemIdx = gl_TessCoord.y;                                       //номер стебля в кусте
+    float primitiveIdx = gl_PrimitiveID / float(numPrimitives);     //ID примитива
+
+    //текущий номер кадра
+    vec2 p1 = returnPerlinNoize(rand(gl_TessCoord.y), 1.0f, .0f, .3f, .3f, .9f);
+    vec2 p2 = returnPerlinNoize(rand(gl_TessCoord.y), 1.0f, .1f, .2f, .0f, .3f);
+    vec2 p3 = returnPerlinNoize(rand(gl_TessCoord.y), 1.0f, .3f, .5f, .6f, .8f);  
+    vec2 p0 = vec2(0.0f, 0.0f);
+
+    float t = gl_TessCoord.x;
+    float t1 = t - 1.0f;
+    vec3 position;
+
+    // Деформация изолинии как кривой Безье
+    position.xy = -p0 * (t1 * t1 * t1) + p3 * (t * t * t) + p1 * t * (t1 * t1) * 3.0f - p2 * (t * t) * t1 * 3.0f;
+    position.x += texture(urandom01, gl_TessCoord.y + primitiveIdx).r - 0.5f;
+    position.z = 0.0f;
+
+    // Rotating generatrix to achieve circular distribution.
+    mat3 circDistribution = rotate(gl_TessCoord.y * 2.0f * M_PI);
+    position = circDistribution * position;
+
+    // вектора нормали и бинормали, повернутые относительно основного скелета
+    normal = rotateNormal(circDistribution, p1, p2, p3, p0, t, t1);
+    binormal = (circDistribution * vec3(0.0f, 0.0f, 1.0f));
+
+    // смещаем в мировых координатах
+    position += gl_in[0].gl_Position.xyz;
+
+    gl_Position = vec4(position, 1.0f);
+}
