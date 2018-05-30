@@ -12,7 +12,9 @@ uniform sampler1D urandom01;
 layout(lines) in;
 layout(triangle_strip, max_vertices = 256) out;
 
-uniform highp mat4 viewProjectionMatrix;
+uniform mat4 projection;
+uniform mat4 view;
+uniform mat4 model;
 
 in vec3 normal[];
 in vec3 binormal[];
@@ -45,7 +47,7 @@ void main() {
             fragAlong = along[j];
             fragAround = around;
             stemIdxFrag = stemIdx[j];
-            gl_Position = viewProjectionMatrix * vec4 (vertexPosition, gl_in[j].gl_Position.w);
+            gl_Position = projection * view * model * vec4 (vertexPosition, gl_in[j].gl_Position.w);
             EmitVertex();
         }
     }

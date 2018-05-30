@@ -81,7 +81,7 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
 	glGenVertexArrays(1, &grassVAO);
 	GLfloat * vertices = generateVerticesForBushes();
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numberOfBushes * 4, vertices, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numberOfBushes * numberOfBushes * 4, vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	delete[] vertices;
@@ -105,8 +105,12 @@ int main()
 		glBindVertexArray(0);
 
 		//grass rendering
-		//glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		//grassShader_uniformValuesUpload(grassShader);
+		grassShader.Use();
+		grassShader_uniformValuesUpload(grassShader);
+		glBindVertexArray(grassVAO);
+		glPatchParameteri(GL_PATCH_VERTICES, 1);
+		glDrawArrays(GL_PATCHES, 0, numberOfBushes * numberOfBushes);
+		glBindVertexArray(0);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
