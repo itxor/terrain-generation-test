@@ -26,8 +26,6 @@ GLFWwindow * createWindow(int width, int height, string title);
 void initialGLEW();
 void do_movement();
 void displayClear();
-void initializationVAO(GLuint & VAO);
-void initializationVBO(GLuint & VBO);
 void terrainShader_uniformValuesUpload(Shader terrainShader);
 void grassShader_uniformValuesUpload(Shader grassShader);
 void loadTexture(GLuint & texture, const char * texturePath);
@@ -68,49 +66,47 @@ int main()
 	/*=====================for terrain_shader=====================*/
 	Shader terrainShader(shaderTerrainNames);
 	GLuint VAO;
-	initializationVAO(VAO);
-
+	glGenVertexArrays(1, &VAO);
 	GLuint displacement_map,
 		terrain_texture;
 	loadTexture(displacement_map, "textures\\displaycement_mapping_noize.png");
 	loadTexture(terrain_texture, "textures\\terrain_texture.jpg");
 
-
-
 	/*=====================for grass_shader=====================*/
 	Shader grassShader(shaderGrassNames);
 	GLuint grassVAO,
 		grassVBO;
-	initializationVAO(grassVAO);
-	initializationVBO(grassVBO);
-	
+
+	glGenBuffers(1, &grassVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
+	glGenVertexArrays(1, &grassVAO);
 	GLfloat * vertices = generateVerticesForBushes();
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numberOfBushes * 4, vertices, GL_STATIC_DRAW);
-	//delete[] vertices;
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numberOfBushes * 4, vertices, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	delete[] vertices;
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+
 
 	while (!glfwWindowShouldClose(window))
 	{
 		do_movement();
 		displayClear();
-		terrainShader.Use();
-
-		//uniform variables upload
-		terrainShader_uniformValuesUpload(terrainShader);
-		grassShader_uniformValuesUpload(grassShader);
-
-		bindTextures(displacement_map, terrain_texture, terrainShader);
-
+		
 		//terrain rendering
-		glBindVertexArray(VAO);
+		terrainShader.Use();
+		terrainShader_uniformValuesUpload(terrainShader);
+		bindTextures(displacement_map, terrain_texture, terrainShader);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glPatchParameteri(GL_PATCH_VERTICES, 4);
+		glBindVertexArray(VAO);
 		glDrawArraysInstanced(GL_PATCHES, 0, 4, 64 * 64);
 		glBindVertexArray(0);
 
 		//grass rendering
+		//glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		//grassShader_uniformValuesUpload(grassShader);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -181,19 +177,6 @@ void displayClear()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void initializationVAO(GLuint & VAO)
-{
-	glGenVertexArrays(1, &VAO);
-	return;
-}
-
-void initializationVBO(GLuint & VBO)
-{
-	glGenBuffers(1, &VBO);
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-}
-
 void mvpUniformUpload(Shader shader)
 {
 	shader.setMat4("projection", glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f));
@@ -246,7 +229,7 @@ GLfloat * generateVerticesForBushes()
 {
 	GLfloat distanse = 1.0f;
 	GLfloat distanseBetweenTheBushes = 1.0f / (GLfloat)numberOfBushes;
-	GLfloat * vertices = new GLfloat[numberOfBushes * 4];
+	GLfloat * vertices = new GLfloat[numberOfBushes * numberOfBushes * 4];
 
 	std::random_device rd;
 	std::mt19937 mt(rd());
@@ -265,7 +248,7 @@ GLfloat * generateVerticesForBushes()
 			vertices[id] = lyambdaX;					//x
 			vertices[id + 1] = 0.0f;					//y
 			vertices[id + 2] = lyambdaZ;				//z
-			vertices[id + 3] = numStems(mt);			//number of stems in bush
+			vertices[id + 3] = 12.0f;			//number of stems in bush
 
 			lyambdaZ += distanseBetweenTheBushes;
 		}
