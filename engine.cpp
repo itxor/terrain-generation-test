@@ -5,14 +5,11 @@
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include "_shader.h"
 #include "Camera.h"
 #include "consts.h"
 #include "CallBacks.h"
 #include <SOIL.h>
-
-using namespace std;
 
 /*function prototipes*/
 void initialGLFWEnviroment();
@@ -22,7 +19,7 @@ void do_movement();
 void displayClear();
 void bufferingInitialization(GLuint &VAO);
 void uniformValuesUpload(Shader mainShader);
-void loadTexture(GLuint & texture, const char * texturePath, unsigned int textureNumber);
+void loadTexture(GLuint & texture, const char * texturePath);
 void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainShader);
 
 int main()
@@ -51,8 +48,8 @@ int main()
 
 	GLuint displacement_map,
 		terrain_texture;
-	loadTexture(displacement_map, "textures\\displaycement_mapping_noize.png", 0);
-	loadTexture(terrain_texture, "textures\\terrain_texture.jpg", 0);
+	loadTexture(displacement_map, "textures\\displaycement_mapping_noize.png");
+	loadTexture(terrain_texture, "textures\\terrain_texture.jpg");
 
 	Shader mainShader(shaderTerrainNames);
 
@@ -65,7 +62,7 @@ int main()
 		uniformValuesUpload(mainShader);
 		bindTextures(displacement_map, terrain_texture, mainShader);
 
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glPatchParameteri(GL_PATCH_VERTICES, 4);
 		glDrawArraysInstanced(GL_PATCHES, 0, 4, 64 * 64);
 
@@ -157,7 +154,7 @@ void uniformValuesUpload(Shader mainShader)
 	mainShader.setMat4("model", glm::mat4(1.0f));
 }
 
-void loadTexture(GLuint & texture, const char * texturePath, unsigned int textureNumber)
+void loadTexture(GLuint & texture, const char * texturePath)
 {
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -172,7 +169,6 @@ void loadTexture(GLuint & texture, const char * texturePath, unsigned int textur
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	SOIL_free_image_data(image);
-	glBindTexture(GL_TEXTURE_2D, textureNumber);
 }
 
 void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainShader)

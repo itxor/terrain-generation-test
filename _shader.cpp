@@ -27,7 +27,7 @@ Shader::Shader(map<unsigned int, const GLchar*> shaderNames)
 		}
 		catch (ifstream::failure e)
 		{
-			cout << "ќшибка обработки файла с кодом шейдера" << endl;
+			std::cout << "ќшибка обработки файла с кодом шейдера" << std::endl;
 		}
 
 		GLCharShaderCode = stringShaderCode.c_str();
@@ -67,7 +67,7 @@ Shader::Shader(map<unsigned int, const GLchar*> shaderNames)
 		if (!success)
 		{
 			glGetShaderInfoLog(shader, 512, NULL, infoLog);
-			cout << "ќшибка при компил€ции шейдера: \n" << infoLog << endl;
+			std::cout << "ќшибка при компил€ции шейдера: \n" << infoLog << std::endl;
 		}
 		glAttachShader(this->Program, shader);
 
@@ -80,7 +80,7 @@ Shader::Shader(map<unsigned int, const GLchar*> shaderNames)
 	if (!success)
 	{
 		glGetProgramInfoLog(this->Program, 512, NULL, infoLog);
-		cout << "ќшибка компил€ции шейдерной программы: \n" << infoLog << endl;
+		std::cout << "ќшибка компил€ции шейдерной программы: \n" << infoLog << std::endl;
 	}
 }
 

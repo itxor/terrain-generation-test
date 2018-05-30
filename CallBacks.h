@@ -16,7 +16,7 @@ void mouse_button_callback(GLFWwindow * window, int button, int action, int mods
 	{
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
-		cout << "Êîîðäèíàòû îêíà: x: " << xpos << " ; y: " << ypos << endl;
+		std::cout << "Êîîðäèíàòû îêíà: x: " << xpos << " ; y: " << ypos << std::endl;
 	}
 }
 
