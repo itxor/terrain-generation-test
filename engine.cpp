@@ -1,5 +1,6 @@
 ﻿#define GLEW_STATIC
 
+#include <random>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
@@ -25,14 +26,18 @@ GLFWwindow * createWindow(int width, int height, string title);
 void initialGLEW();
 void do_movement();
 void displayClear();
-void bufferingInitialization(GLuint &VAO);
+void initializationVAO(GLuint & VAO);
+void initializationVBO(GLuint & VBO);
 void terrainShader_uniformValuesUpload(Shader terrainShader);
 void grassShader_uniformValuesUpload(Shader grassShader);
 void loadTexture(GLuint & texture, const char * texturePath);
 void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainShader);
+GLfloat * generateVerticesForBushes();
 
 int main()
 {
+	setlocale(LC_ALL, "Russian");
+
 	map<unsigned int, const GLchar *> shaderTerrainNames = {
 		{ vertex_shader, "shaders/terrain_shaders/shader.vs" },
 		{ tcs_shader, "shaders/terrain_shaders/shader.tcs" },
@@ -47,8 +52,7 @@ int main()
 		{ fragment_shader, "shaders/vegetation/grass.frag" }
 	};
 	GLFWwindow * window;
-	GLuint VAO;
-
+	
 	initialGLFWEnviroment();
 	window = createWindow(WIDTH, HEIGHT, "Generation of landscape elements");
 	if (window == nullptr)
@@ -59,16 +63,33 @@ int main()
 	{
 		initialGLEW();
 		enableCallBackFunctions(window);
-		bufferingInitialization(VAO);
 	}
+
+	/*=====================for terrain_shader=====================*/
+	Shader terrainShader(shaderTerrainNames);
+	GLuint VAO;
+	initializationVAO(VAO);
 
 	GLuint displacement_map,
 		terrain_texture;
 	loadTexture(displacement_map, "textures\\displaycement_mapping_noize.png");
 	loadTexture(terrain_texture, "textures\\terrain_texture.jpg");
 
-	Shader terrainShader(shaderTerrainNames);
+
+
+	/*=====================for grass_shader=====================*/
 	Shader grassShader(shaderGrassNames);
+	GLuint grassVAO,
+		grassVBO;
+	initializationVAO(grassVAO);
+	initializationVBO(grassVBO);
+	
+	GLfloat * vertices = generateVerticesForBushes();
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numberOfBushes * 4, vertices, GL_STATIC_DRAW);
+	//delete[] vertices;
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -83,9 +104,11 @@ int main()
 		bindTextures(displacement_map, terrain_texture, terrainShader);
 
 		//terrain rendering
+		glBindVertexArray(VAO);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glPatchParameteri(GL_PATCH_VERTICES, 4);
 		glDrawArraysInstanced(GL_PATCHES, 0, 4, 64 * 64);
+		glBindVertexArray(0);
 
 		//grass rendering
 		glfwSwapBuffers(window);
@@ -158,14 +181,17 @@ void displayClear()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void bufferingInitialization(GLuint &VAO)
+void initializationVAO(GLuint & VAO)
 {
-	if (VAO != -1)
-	{
-		glGenVertexArrays(1, &VAO);
-		glBindVertexArray(VAO);
-	}
+	glGenVertexArrays(1, &VAO);
 	return;
+}
+
+void initializationVBO(GLuint & VBO)
+{
+	glGenBuffers(1, &VBO);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 }
 
 void mvpUniformUpload(Shader shader)
@@ -214,4 +240,39 @@ void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainSh
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, terrain_texture);
 	glUniform1i(glGetUniformLocation(mainShader.Program, "tex_color"), 1);
+}
+
+GLfloat * generateVerticesForBushes()
+{
+	GLfloat distanse = 1.0f;
+	GLfloat distanseBetweenTheBushes = 1.0f / (GLfloat)numberOfBushes;
+	GLfloat * vertices = new GLfloat[numberOfBushes * 4];
+
+	std::random_device rd;
+	std::mt19937 mt(rd());
+	//количество стеблей
+	std::uniform_int_distribution<GLint> numStems(12, 64);
+
+	GLfloat lyambdaX = -0.5f,
+		lyambdaZ = -0.5f;
+	//OX
+	for (GLint i = 0; i < numberOfBushes; ++i)
+	{
+		//OZ
+		for (GLint j = 0; j < numberOfBushes; ++j)
+		{
+			const int id = ((i * numberOfBushes) + j) * 4;
+			vertices[id] = lyambdaX;					//x
+			vertices[id + 1] = 0.0f;					//y
+			vertices[id + 2] = lyambdaZ;				//z
+			vertices[id + 3] = numStems(mt);			//number of stems in bush
+
+			lyambdaZ += distanseBetweenTheBushes;
+		}
+		lyambdaZ = -0.5f;
+
+		lyambdaX += distanseBetweenTheBushes;
+	}
+
+	return vertices;
 }

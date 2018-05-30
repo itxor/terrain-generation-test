@@ -2,7 +2,6 @@
 
 Shader::Shader(map<unsigned int, const GLchar*> shaderNames)
 {
-	setlocale(LC_ALL, "Russian");
 	this->Program = glCreateProgram();
 	GLint success;
 	GLchar infoLog[512];
