@@ -34,7 +34,7 @@ void main(void)
                   gl_TessCoord.x);
     vec4 p = mix(p2, p1, gl_TessCoord.y);
 
-    p.y += texture(tex_displacement, tc).r * dmap_depth;
+    p.y += texture(tex_displacement, tc).r * 3.4;
 
     gl_Position = projection * view * model * p;
     tes_out.tc = tc;

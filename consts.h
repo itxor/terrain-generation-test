@@ -13,6 +13,6 @@ GLfloat lastX = WIDTH / 2.0f,
 		currentFrame = 0;
 
 /*==========================for gruss shader==========================*/
-const GLfloat numberOfBushes = 16;
+const GLfloat numberOfBushes = 64;
 
 GLuint primQuery;

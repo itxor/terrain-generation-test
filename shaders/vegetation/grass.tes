@@ -13,6 +13,9 @@ out float stemThickness;
 out float along;
 flat out float stemIdx;
 
+in float tcs_offsY[];
+out float tes_offsY;
+
 float rand(const in float seed) 
 {
 
@@ -174,36 +177,37 @@ vec3 rotateNormal(mat3 circDistribution, vec2 p1, vec2 p2, vec2 p3, vec2 p0, flo
 
 void main(void)
 {
-    stemThickness = thickness(gl_TessCoord.x);                      //толщина текущего стебля
-    along = gl_TessCoord.x;                                         //текущая CP
-    stemIdx = gl_TessCoord.y;                                       //номер стебля в кусте
-    float primitiveIdx = gl_PrimitiveID / float(numPrimitives);     //ID примитива
+  stemThickness = thickness(gl_TessCoord.x);                      //толщина текущего стебля
+  along = gl_TessCoord.x;                                         //текущая CP
+  stemIdx = gl_TessCoord.y;                                       //номер стебля в кусте
+  float primitiveIdx = gl_PrimitiveID / float(numPrimitives);     //ID примитива
 
-    //текущий номер кадра
-    vec2 p1 = returnPerlinNoize(rand(gl_TessCoord.y), 1.0f, .0f, .3f, .3f, .9f);
-    vec2 p2 = returnPerlinNoize(rand(gl_TessCoord.y), 1.0f, .1f, .2f, .0f, .3f);
-    vec2 p3 = returnPerlinNoize(rand(gl_TessCoord.y), 1.0f, .3f, .5f, .6f, .8f);  
-    vec2 p0 = vec2(0.0f, 0.0f);
+  //текущий номер кадра
+  vec2 p1 = returnPerlinNoize(rand(gl_TessCoord.y), 1.0f, .0f, .3f, .3f, .9f);
+  vec2 p2 = returnPerlinNoize(rand(gl_TessCoord.y), 1.0f, .1f, .2f, .0f, .3f);
+  vec2 p3 = returnPerlinNoize(rand(gl_TessCoord.y), 1.0f, .3f, .5f, .6f, .8f);  
+  vec2 p0 = vec2(0.0f, 0.0f);
 
-    float t = gl_TessCoord.x;
-    float t1 = t - 1.0f;
-    vec3 position;
+  float t = gl_TessCoord.x;
+  float t1 = t - 1.0f;
+  vec3 position;
 
-    // Деформация изолинии как кривой Безье
-    position.xy = -p0 * (t1 * t1 * t1) + p3 * (t * t * t) + p1 * t * (t1 * t1) * 3.0f - p2 * (t * t) * t1 * 3.0f;
-    position.x += texture(urandom01, gl_TessCoord.y + primitiveIdx).r - 0.5f;
-    position.z = 0.0f;
+  // Деформация изолинии как кривой Безье
+  position.xy = -p0 * (t1 * t1 * t1) + p3 * (t * t * t) + p1 * t * (t1 * t1) * 3.0f - p2 * (t * t) * t1 * 3.0f;
+  position.x += texture(urandom01, gl_TessCoord.y + primitiveIdx).r - 0.5f;
+  position.z = 0.0f;
 
-    // Rotating generatrix to achieve circular distribution.
-    mat3 circDistribution = rotate(gl_TessCoord.y * 2.0f * M_PI);
-    position = circDistribution * position;
+  // Rotating generatrix to achieve circular distribution.
+  mat3 circDistribution = rotate(gl_TessCoord.y * 2.0f * M_PI);
+  position = circDistribution * position;
 
-    // вектора нормали и бинормали, повернутые относительно основного скелета
-    normal = rotateNormal(circDistribution, p1, p2, p3, p0, t, t1);
-    binormal = (circDistribution * vec3(0.0f, 0.0f, 1.0f));
+  // вектора нормали и бинормали, повернутые относительно основного скелета
+  normal = rotateNormal(circDistribution, p1, p2, p3, p0, t, t1);
+  binormal = (circDistribution * vec3(0.0f, 0.0f, 1.0f));
 
-    // смещаем в мировых координатах
-    position += gl_in[0].gl_Position.xyz;
+  // смещаем в мировых координатах
+  position += gl_in[0].gl_Position.xyz;
 
-    gl_Position = vec4(position, 1.0f);
+  tes_offsY = tcs_offsY[0]; 
+  gl_Position = vec4(position, 1.0f);
 }

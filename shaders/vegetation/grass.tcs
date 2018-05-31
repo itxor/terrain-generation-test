@@ -4,6 +4,9 @@ layout (vertices = 1) out;
 
 uniform vec3 eyePosition;
 
+in float offsY[];
+out float tcs_offsY[];
+
 int lod() {
     float dist = distance(gl_in[gl_InvocationID].gl_Position.xyz, eyePosition);
     if(dist < 10.0f) {
@@ -28,4 +31,5 @@ void main () {
     float halfspaceCull =
         step(dot(eyePosition - gl_in[gl_InvocationID].gl_Position.xyz, lookDirection), 0);
     gl_TessLevelOuter[1] = lod() * halfspaceCull;
+    tcs_offsY[gl_InvocationID] = offsY[0];
 }
