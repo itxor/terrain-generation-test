@@ -3,10 +3,7 @@
 #define numSectors 24
 #define M_PI 3.1415926535897932384626433832795f
 
-const int totalFrames = 65536;
-uniform int frameNumber;
 uniform int numPrimitives;
-float sfn = float(frameNumber) / totalFrames; // Specific frame number.
 uniform sampler1D urandom01;
 
 layout(isolines, equal_spacing) in;

@@ -27,10 +27,11 @@ void initialGLEW();
 void do_movement();
 void displayClear();
 void terrainShader_uniformValuesUpload(Shader terrainShader);
-void grassShader_uniformValuesUpload(Shader grassShader);
+void grassShader_uniformValuesUpload(Shader grassShader, Camera camera, int numbrushes);
 void loadTexture(GLuint & texture, const char * texturePath);
 void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainShader);
 GLfloat * generateVerticesForBushes();
+void generateAndUploadTexture(Shader grassShader);
 
 int main()
 {
@@ -87,6 +88,7 @@ int main()
 	delete[] vertices;
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+	generateAndUploadTexture(grassShader);
 
 
 	while (!glfwWindowShouldClose(window))
@@ -106,11 +108,12 @@ int main()
 
 		//grass rendering
 		grassShader.Use();
-		grassShader_uniformValuesUpload(grassShader);
+		grassShader_uniformValuesUpload(grassShader, camera, pow(numberOfBushes, 2));
 		glBindVertexArray(grassVAO);
 		glPatchParameteri(GL_PATCH_VERTICES, 1);
 		glDrawArrays(GL_PATCHES, 0, numberOfBushes * numberOfBushes);
 		glBindVertexArray(0);
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -195,10 +198,13 @@ void terrainShader_uniformValuesUpload(Shader terrainShader)
 	terrainShader.setFloat("dmap_depth", 6.0f);
 }
 
-void grassShader_uniformValuesUpload(Shader grassShader)
+void grassShader_uniformValuesUpload(Shader grassShader, Camera camera, int numPrimitives)
 {
 	mvpUniformUpload(grassShader);
 	//other uniform variables
+	grassShader.setVec3("eyePosition", camera.Position);
+	grassShader.setInt("numPrimitives", numPrimitives);
+
 }
 
 void loadTexture(GLuint & texture, const char * texturePath)
@@ -231,8 +237,8 @@ void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainSh
 
 GLfloat * generateVerticesForBushes()
 {
-	GLfloat distanse = 1.0f;
-	GLfloat distanseBetweenTheBushes = 1.0f / (GLfloat)numberOfBushes;
+	GLfloat distanse = 100.0f;
+	GLfloat distanseBetweenTheBushes = distanse / (GLfloat)numberOfBushes;
 	GLfloat * vertices = new GLfloat[numberOfBushes * numberOfBushes * 4];
 
 	std::random_device rd;
@@ -240,8 +246,8 @@ GLfloat * generateVerticesForBushes()
 	//количество стеблей
 	std::uniform_int_distribution<GLint> numStems(12, 64);
 
-	GLfloat lyambdaX = -0.5f,
-		lyambdaZ = -0.5f;
+	GLfloat lyambdaX = -distanse / 2.0f,
+		lyambdaZ = -distanse / 2.0f;
 	//OX
 	for (GLint i = 0; i < numberOfBushes; ++i)
 	{
@@ -256,10 +262,34 @@ GLfloat * generateVerticesForBushes()
 
 			lyambdaZ += distanseBetweenTheBushes;
 		}
-		lyambdaZ = -0.5f;
+		lyambdaZ = -distanse / 2.0f;
 
 		lyambdaX += distanseBetweenTheBushes;
 	}
 
 	return vertices;
+}
+
+void generateAndUploadTexture(Shader shader)
+{
+	GLuint randTexture;
+	const GLuint randTexSize = 256;
+	GLfloat randTexData[randTexSize];
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+	std::generate(randTexData, randTexData + randTexSize, [&]() {return dis(gen); });
+	// Create and tune random texture.
+	glGenTextures(1, &randTexture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_1D, randTexture);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAX_LEVEL, 0);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_R16F, randTexSize, 0, GL_RED, GL_FLOAT, randTexData);
+	glUniform1i(glGetUniformLocation(shader.Program, "urandom01"), 0);
+
+	return;
 }

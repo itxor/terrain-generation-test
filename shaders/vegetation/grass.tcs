@@ -3,7 +3,6 @@
 layout (vertices = 1) out;
 
 uniform vec3 eyePosition;
-uniform vec3 lookDirection;
 
 int lod() {
     float dist = distance(gl_in[gl_InvocationID].gl_Position.xyz, eyePosition);
@@ -23,6 +22,7 @@ int lod() {
 }
 
 void main () {
+    vec3 lookDirection = vec3(0.0f, 0.0f, -1.0f);
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
     gl_TessLevelOuter[0] = gl_in[gl_InvocationID].gl_Position.w;
     float halfspaceCull =

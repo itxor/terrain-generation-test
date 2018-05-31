@@ -20,4 +20,4 @@ GLfloat vertices[] = {
 };
 
 /*==========================for gruss shader==========================*/
-const GLfloat numberOfBushes = 4;
+const GLfloat numberOfBushes = 16;

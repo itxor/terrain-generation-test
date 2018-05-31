@@ -4,8 +4,8 @@ in vec3 fragPosition;
 in vec3 fragNormal;
 in float fragAlong; // Surface coordinate along the stem.
 in float fragAround; // Surface coordinate around the stem.
-uniform vec3 eyePosition;
 
+uniform vec3 eyePosition;
 out vec4 outColor;
 
 float cap(const in float x) 
