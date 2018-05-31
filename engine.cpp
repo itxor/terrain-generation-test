@@ -78,14 +78,45 @@ int main()
 	GLuint grassVAO,
 		grassVBO;
 
-	glGenBuffers(1, &grassVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
 	glGenVertexArrays(1, &grassVAO);
-	GLfloat * vertices = generateVerticesForBushes();
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numberOfBushes * numberOfBushes * 4, vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
+	glBindVertexArray(grassVAO);
+	glGenBuffers(1, &grassVBO);
 	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
+	/*рандомное распределение кустов по сетке*/
+	const int numNodes = numberOfBushes;
+	const GLfloat gridStep = 3.0f;
+	const GLfloat xDispAmp = 5.0f;
+	const GLfloat zDispAmp = 5.0f;
+	const GLfloat yDispAmp = 0.3f;
+	GLuint numClusters = numNodes * numNodes;
+	GLfloat *vertices = new GLfloat[numClusters * 4];
+	//генерируем случайную последовательность
+	std::random_device rd;
+	std::mt19937 mt(rd());
+	//формируем диапазоны для случайных чисел
+	std::uniform_real_distribution<GLfloat> xDisp(-xDispAmp, xDispAmp);
+	std::uniform_real_distribution<GLfloat> yDisp(-yDispAmp, yDispAmp);
+	std::uniform_real_distribution<GLfloat> zDisp(-zDispAmp, zDispAmp);
+	//количество стеблей
+	std::uniform_int_distribution<GLint> numStems(12, 64);
+	for (int i = 0; i < numNodes; ++i) {
+		for (int j = 0; j < numNodes; ++j) {
+			const int idx = (i * numNodes + j) * 4;
+			vertices[idx] = (i - numNodes / 2) * gridStep + xDisp(mt);  // x
+			vertices[idx + 1] = yDisp(mt);                                  // y
+			vertices[idx + 2] = (j - numNodes / 2) * gridStep + zDisp(mt);  // z
+			vertices[idx + 3] = numStems(mt);                               // количество стеблей (рандомно от 12 до 64)
+		}
+	}
+	/*рандомное распределение кустов по сетке*/
+	/*отправляем данные в видеопамять*/
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * numClusters * 4, vertices, GL_STATIC_DRAW);
+	glFinish();
 	delete[] vertices;
+	/*отправляем данные в видеопамять*/
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	generateAndUploadTexture(grassShader);
@@ -108,11 +139,14 @@ int main()
 
 		//grass rendering
 		grassShader.Use();
+		glBeginQuery(GL_PRIMITIVES_GENERATED, primQuery);
+		glEnable(GL_DEPTH_TEST);
 		grassShader_uniformValuesUpload(grassShader, camera, pow(numberOfBushes, 2));
 		glBindVertexArray(grassVAO);
-		glPatchParameteri(GL_PATCH_VERTICES, 1);
-		glDrawArrays(GL_PATCHES, 0, numberOfBushes * numberOfBushes);
+		glPatchParameteri(GL_PATCH_VERTICES, 4);
+		glDrawArrays(GL_PATCHES, 0, 4 * 16 * 16);
 		glBindVertexArray(0);
+		glEndQuery(GL_PRIMITIVES_GENERATED);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -200,11 +234,14 @@ void terrainShader_uniformValuesUpload(Shader terrainShader)
 
 void grassShader_uniformValuesUpload(Shader grassShader, Camera camera, int numPrimitives)
 {
-	mvpUniformUpload(grassShader);
+	glm::mat4 proj = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+	glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 result = proj * view;
+	grassShader.setMat4("viewProjectionMatrix", result);
 	//other uniform variables
-	grassShader.setVec3("eyePosition", camera.Position);
+	grassShader.setVec3("eyePosition", camera.Position.x, camera.Position.y, camera.Position.z);
+	grassShader.setVec3("lookDirection", camera.getLookDirection());
 	grassShader.setInt("numPrimitives", numPrimitives);
-
 }
 
 void loadTexture(GLuint & texture, const char * texturePath)
@@ -237,37 +274,43 @@ void bindTextures(GLuint displacement_map, GLuint terrain_texture, Shader mainSh
 
 GLfloat * generateVerticesForBushes()
 {
-	GLfloat distanse = 100.0f;
-	GLfloat distanseBetweenTheBushes = distanse / (GLfloat)numberOfBushes;
-	GLfloat * vertices = new GLfloat[numberOfBushes * numberOfBushes * 4];
+	//GLfloat distanse = 1.0f;
+	//GLfloat distanseBetweenTheBushes = distanse / (GLfloat)numberOfBushes;
+	//GLfloat * vertices = new GLfloat[numberOfBushes * numberOfBushes * 4];
 
-	std::random_device rd;
-	std::mt19937 mt(rd());
-	//количество стеблей
-	std::uniform_int_distribution<GLint> numStems(12, 64);
+	//std::random_device rd;
+	//std::mt19937 mt(rd());
+	////количество стеблей
+	//std::uniform_int_distribution<GLint> numStems(12, 64);
 
-	GLfloat lyambdaX = -distanse / 2.0f,
-		lyambdaZ = -distanse / 2.0f;
-	//OX
-	for (GLint i = 0; i < numberOfBushes; ++i)
-	{
-		//OZ
-		for (GLint j = 0; j < numberOfBushes; ++j)
-		{
-			const int id = ((i * numberOfBushes) + j) * 4;
-			vertices[id] = lyambdaX;					//x
-			vertices[id + 1] = 0.0f;					//y
-			vertices[id + 2] = lyambdaZ;				//z
-			vertices[id + 3] = 12.0f;			//number of stems in bush
+	//GLfloat lyambdaX = -distanse / 2.0f,
+	//	lyambdaZ = -distanse / 2.0f;
+	////OX
+	//for (GLint i = 0; i < numberOfBushes; ++i)
+	//{
+	//	//OZ
+	//	for (GLint j = 0; j < numberOfBushes; ++j)
+	//	{
+	//		const int id = ((i * numberOfBushes) + j) * 4;
+	//		//vertices[id] = lyambdaX;					//x
+	//		//vertices[id + 1] = 0.0f;					//y
+	//		//vertices[id + 2] = lyambdaZ;				//z
+	//		vertices[id] = -1.0f;					//x
+	//		vertices[id + 1] = 0.0f;					//y
+	//		vertices[id + 2] = -1.0f;				//z
+	//		vertices[id + 3] = 12.0f;			//number of stems in bush
 
-			lyambdaZ += distanseBetweenTheBushes;
-		}
-		lyambdaZ = -distanse / 2.0f;
+	//		lyambdaZ += distanseBetweenTheBushes;
+	//	}
+	//	lyambdaZ = -distanse / 2.0f;
 
-		lyambdaX += distanseBetweenTheBushes;
-	}
+	//	lyambdaX += distanseBetweenTheBushes;
+	//}
 
-	return vertices;
+	
+
+	//return vertices;
+	return nullptr;
 }
 
 void generateAndUploadTexture(Shader shader)
@@ -290,6 +333,7 @@ void generateAndUploadTexture(Shader shader)
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAX_LEVEL, 0);
 	glTexImage1D(GL_TEXTURE_1D, 0, GL_R16F, randTexSize, 0, GL_RED, GL_FLOAT, randTexData);
 	glUniform1i(glGetUniformLocation(shader.Program, "urandom01"), 0);
+	glGenQueries(1, &primQuery);
 
 	return;
 }
